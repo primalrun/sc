@@ -1,13 +1,12 @@
 Purpose:
-	Copy source files for certain qvw file from production server \\qlikview\c$ to local pc
-	Each time the Python file is run the local pc files are overwritten for all subfolders in the qv_dev directory
-	The c:\qv_dev\qvd_list.txt file is not overwritten, user input required
+	Copy source files for user selected qvw file from production to local PC.  
 
-1.  directory should be created on local pc
-	c:\qv_dev
-
-2.  c:\qv_dev\qvd_list.txt file should be populated with qvd source files for individual qvw file in the following format
-	Associate_EmplIDKey.qvd
-	Data Security Exemptions.qvd
-
-3. Other general purpose files needed for the reloads are also copied programatically
+Required Python Packages external to standard library:
+	openpyxl
+	
+Information:
+	User is prompted to select file from production server \\qlikview\c$
+	This script only overwrites files related to qvw file selected as well as general support source files
+	The file Qlik Content and Security.xlsx is used to map the correct source files
+	The script will need to be edited for other general purpose files that are needed in the future or if the scenario was missed in development testing
+	
