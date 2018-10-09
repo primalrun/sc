@@ -4,14 +4,19 @@ import shutil
 import tkinter as tk
 from tkinter import filedialog
 from openpyxl import load_workbook
+import time
 
+#find file function
+def find_file(fname, fpath):    
+    for root, dirs, files in os.walk(fpath):
+        if fname in files:
+            return os.path.join(root, fname)
+        
 #command line resize
 os.system('mode con cols=200 lines=50')
  
-#Requires c:\qv_dev\qvd_list.txt to be updated with qvd files for *dashboard.qvw
 local_dir = 'C:/QlikView/'
 qvd_dir = local_dir + 'QVD'
-s_file = local_dir + r'qvd_list.txt'
 prod_dir = '//QlikView/C$/QlikView/'
 qvd_prod_dir = prod_dir + 'QVD'
 source_data_prod_dir = prod_dir + 'SourceData'
@@ -28,6 +33,10 @@ if len(qvw_file) == 0:
 qvw_split = qvw_file.split('/')
 cat_folder = qvw_split[-2]
 qvw_file = qvw_split[-1]
+time_stamp=time.strftime('%Y%m%d-%H%M%S')
+qvw_file_new = (qvw_file.split('.')[0] + ' ' + 
+                time_stamp + '.' + 
+                qvw_file.split('.')[1]) 
 
 #qvd directory
 if not os.path.exists(qvd_dir):
@@ -44,6 +53,11 @@ if not os.path.exists(local_dir + '/' + 'SourceData'):
 #sourcedata files    
 src_file = prod_dir + 'SourceData' + '/' + 'Qlik Content and Security.xlsx'
 dest_file = local_dir + '/' + 'SourceData' + '/' + 'Qlik Content and Security.xlsx'    
+print('Copying {} to {}'.format(src_file, dest_file))
+shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
+
+src_file = prod_dir + 'SourceData' + '/' + 'QVD Error Thresholds.xlsx'
+dest_file = local_dir + '/' + 'SourceData' + '/' + 'QVD Error Thresholds.xlsx'    
 print('Copying {} to {}'.format(src_file, dest_file))
 shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
 
@@ -75,20 +89,39 @@ qvd_dict = {}
 for r in range(r1, r_last+1):
     if ws_source.cell(row=r, column=qvw_col).value == qvw_file:
         qvd_dict[ws_source.cell(row=r, column=source_col).value] = None
-        
+      
 wb_source.close()
+
+#ColorPallette(50).xlsx
+src_file = prod_dir + 'SourceData' + '/' + 'ColorPalette(50).xlsx'
+dest_file = local_dir + '/' + 'SourceData' + '/' + 'ColorPalette(50).xlsx'    
+print('Copying {} to {}'.format(src_file, dest_file))
+shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
   
 #populate list with directory, folder name, qvd file
 qvd_file_list = []
 source_data_file_list = []
 
-#qvd files
-dir_list = os.listdir(qvd_prod_dir)
+#copy qvd files
 for v in qvd_dict:
-    for f in dir_list:        
-        if os.path.isfile(qvd_prod_dir + '/' + f + '/' + v):
-            qvd_file_list.append((qvd_prod_dir, f, v))
-            break
+    #get production file path
+    qvd_file_production = find_file(v, qvd_prod_dir)
+    if qvd_file_production is not None:
+        #get directory portion only
+        qvd_file_path_only = os.path.dirname(qvd_file_production)
+        #get file name only
+        qvd_filename_only = os.path.basename(qvd_file_production)
+        #make directory on local machine if needed        
+        local_qvd_directory = os.path.join(qvd_dir, 
+                                           qvd_file_path_only.split('QVD\\')[1]
+                                           )
+        if not os.path.exists(local_qvd_directory):
+            os.makedirs(local_qvd_directory)
+        #copy qvd files from production to local
+        src_file = qvd_file_production
+        dest_file = os.path.join(local_qvd_directory, qvd_filename_only)
+        print('Copying {} to {}'.format(src_file, dest_file))
+        shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
 
 #sourcedata files
 dir_list = os.listdir(source_data_prod_dir)
@@ -97,21 +130,9 @@ for v in qvd_dict:
         source_data_file_list.append((prod_dir + '/', 'SourceData', v))
         break
     
-#create folders on local pc
-for f in qvd_file_list:    
-    if not os.path.exists(qvd_dir + '/' + f[1]):
-        os.mkdir(qvd_dir + '/' + f[1])
-
+#create folders on local pc        
 if not os.path.exists(local_dir + '/' + 'SourceData'):
     os.mkdir(local_dir + '/' + 'SourceData')
-
-#copy qvd files from production to local pc
-for f in qvd_file_list:
-    src_file = f[0] + '/' + f[1] + '/' +f[2]
-    dest_file = qvd_dir + '/' + f[1] + '/' +f[2]
-    print('Copying {} to {}'.format(src_file, dest_file))
-    shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
-    
 
 #copy source data files from production to local pc
 for f in source_data_file_list:
@@ -119,7 +140,6 @@ for f in source_data_file_list:
     dest_file = local_dir + '/' + f[1] + '/' +f[2]
     print('Copying {} to {}'.format(src_file, dest_file))
     shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
-
 
 #copy other general purpose source files
 #qvd_history
@@ -172,7 +192,7 @@ if not os.path.exists(local_dir + '/' + 'SourceDocuments' + '/' + cat_folder):
     os.mkdir(local_dir + '/' + 'SourceDocuments' + '/' + cat_folder)
 
 src_file = prod_dir + 'SourceDocuments' + '/' + cat_folder + '/' + qvw_file
-dest_file = local_dir +  'SourceDocuments' + '/' + cat_folder + '/' + qvw_file    
+dest_file = local_dir +  'SourceDocuments' + '/' + cat_folder + '/' + qvw_file_new    
 print('Copying {} to {}'.format(src_file, dest_file))
 shutil.copy2(src=src_file, dst=dest_file, follow_symlinks=False)
     
